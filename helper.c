@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 #include "helper.h"
 
 #define RECEIVED_MSG_SIZE 500
@@ -50,7 +51,7 @@ int get_type_1_length(FILE *fptr, uint8_t total_commas)
 	int unit_length = 0;
 	int no_of_commas=0;
 	long prev_comma_pos = -1;
-	while (1)	//get one byte each iteration and check if it is valid. 
+	while (true)	//get one byte each iteration and check if it is valid. 
 	{
 		current = fgetc(fptr);
 		long cpos = ftell(fptr);
@@ -89,6 +90,68 @@ void get_type_1_units(FILE *fptr, uint8_t *units, uint8_t amount)
 	fread(units,sizeof(uint8_t), amount, fptr);	//units variable contains the ASCII buffer
 }
 
+
+void type_0_to_type_1(uint8_t *t0_to_1, uint16_t *t0_units,uint8_t amount)
+{
+	// char t0_to_1[10000];
+	int position = 0;	//it is the index of buffer, we specify the size of the contents of the units
+	uint8_t type = 1;
+	memset(t0_to_1,0,10000); //set it to start from t0_to_1[0]
+	memcpy(t0_to_1,&type,1);	//copy the new type val on the buffer
+	position ++;
+	char type_1_amt[3];	//3 bytes for the ascii amount value
+	int a;
+	//converting the int amount to string ascii value. we know 0=48+0, 1=48+1 in ascii. 
+	//start to fill the type_1_amt string from the end.
+	for(a=2;a>-1;--a)
+	{
+		type_1_amt[a] = (amount%10)+48;	//getting the last character
+		amount = amount/10;	//reducing the end digit
+	}
+
+	memcpy(t0_to_1+position,type_1_amt,3);
+	position += 3;
+	/*Now we use snprintf to count the characters of the string and store the maximum no. of bytes in the buffer.
+	we know, the maximum ascii value is 65535, hence we need 5 bytes for storing and 1 byte for the null character.
+	*/
+	char delimiter = ',';
+	uint16_t num;
+	for (a=0;a<amount;++a)
+	{
+		//extract the number
+		num = (t0_units[a]<<8)|(t0_units[a]>>8);
+		char num_string[6];	//Max 5, 1 for NULL
+		int size = snprintf(num_string,6,"%d",num);	//max to write to num_string: 6 bytes
+		//write to  t0_to_1 buffer
+		memcpy(t0_to_1+position,num_string,size);
+		position += size;
+		//Add commas to all exceot the last one
+		if (a<amount-1)
+		{
+			memcpy(t0_to_1+position,&delimiter,1);
+			position++;
+		}
+	}
+
+	// fwrite(t0_to_1,sizeof(uint8_t),position,writer);
+}
+
+
+void type_0_to_type_0(uint8_t *type0from0, uint16_t *t0_units, uint8_t amount)
+{
+	//set type byte to zero
+	uint8_t type = 0;
+	int length = 2*(amount+1);
+	//copy to type0from0 buffer
+	int size=0;
+	memcpy(type0from0+size,&type,1);
+	size++;
+	memcpy(type0from0+size,&amount,1);	//amount is 1 byte
+	size++;
+	memcpy(type0from0+size,&t0_units,amount*2);
+}
+
+
 //two different functions created for print(for checking) because of difference in the data type of units. uint16_t vs uint8_t
 void print_units_0(uint16_t *units, uint8_t amount)
 {
@@ -111,7 +174,6 @@ void print_units_1(uint8_t *units, int unit_size)
 	printf("\n");
 
 }
-
 
 
 
@@ -159,44 +221,7 @@ int main()
 			// break;
 		}
 	}
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 void ShowError(char *err_message){
 	printf("%s\n",err_message);
