@@ -7,6 +7,102 @@
 #define RECEIVED_MSG_SIZE 500
 #define SENT_MSG_SIZE 13
 
+//unit is only a byte, hence uint8_t
+uint8_t get_unit_type(FILE *fptr)
+{
+	return getc(fptr);
+}
+
+uint8_t get_type_0_amount(FILE *fptr)
+{
+	return getc(fptr);	//returns the amount of type 0, which is 2 bytes.
+}
+
+uint8_t get_type_1_amount(FILE *fptr, char*type_1_amt)
+{
+	fread(type_1_amt, sizeof(char), 3, fptr);	//Read 3 bytes one at a time, type_1_amt contains the 3 byte content of the buffer
+	int a;
+	for (a=0;a<3;a++)
+	{
+		if (type_1_amt[a] < 48 && type_1_amt[a]>57)	//if the ascii digit does not fall on the 0-9 range, then return a flag
+		{
+			return -1;
+		}
+	}
+	return 1;	//return 1 to know the amount is valud
+}
+
+//each value is 2 bytes, hence uint16_t for units
+void get_type_0_units(FILE *fptr, uint16_t *units, uint8_t amount)
+{
+	fread(units, sizeof(uint16_t), amount, fptr); //reads 2 bytes from the file for amount times.
+}
+
+void print_units(uint16_t *units, uint8_t amount)
+{
+	int a;
+	for (a=0;a<amount;a++)
+	{
+		uint16_t number = (units[a] << 8) | (units[a] >> 8);
+		printf("%d ",number );
+	}
+}
+
+int main()
+{
+	FILE *fptr;
+	uint8_t unit_type;
+	fptr = fopen("practice_project_test_file_1","rb");
+	unit_type=get_unit_type(fptr);
+	printf("Unit is %d\n",unit_type );
+	if (unit_type==0)	//Testing if the program is correct for unit type 0
+	{
+		uint8_t amount = get_type_0_amount(fptr);
+		printf("The amount is %d \n", amount );
+		uint16_t units[amount];	//buffer to store units
+		get_type_0_units(fptr, units, amount);
+		print_units(units, amount);
+
+
+	}
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void ShowError(char *err_message){
 	printf("%s\n",err_message);
 	exit(1);	
