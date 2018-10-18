@@ -141,16 +141,81 @@ void type_0_to_type_0(uint8_t *type0from0, uint16_t *t0_units, uint8_t amount)
 {
 	//set type byte to zero
 	uint8_t type = 0;
-	int length = 2*(amount+1);
 	//copy to type0from0 buffer
 	int size=0;
 	memcpy(type0from0+size,&type,1);
 	size++;
 	memcpy(type0from0+size,&amount,1);	//amount is 1 byte
 	size++;
-	memcpy(type0from0+size,&t0_units,amount*2);
+	memcpy(type0from0+size,t0_units,amount*2);
 }
 
+//just fill the type and amount of the unit. Copy t1_units till unit_length.
+void type_1_to_type_1(uint8_t *type1from1, uint8_t *t1_units, char *amount, int unit_length)
+{
+	uint8_t type = 1;
+	int size = 0;
+	memcpy(type1from1+size, &type,1);
+	size++;
+	memcpy(type1from1+size, amount,3);
+	size += 3;
+	memcpy(type1from1+size, t1_units, unit_length);
+
+}
+
+void type_1_to_type_0(uint8_t *type0from1, uint8_t *t1_units, uint8_t amount, int unit_length)
+{
+	uint8_t type = 0;
+	uint16_t temp[amount];
+	uint16_t temp1;
+	char type_1_matrix[amount][5];
+	memset(type_1_matrix,0,sizeof(char)*amount*5);
+	/*storing each number in a matrix. We need to traverse from the the end as it is stored that way in the matrix 
+	for simplicity. It also helps with atoi() later.*/
+	int string_index = unit_length -1 ;
+	int prev_letter_ind;
+	int a;
+	int b;
+	//parsing starts here
+	for (a=amount-1;a>-1;a--)
+	{
+		for (b=4;b>-1;b--)
+		{
+			if (t1_units[string_index]!=',')
+			{
+				type_1_matrix[a][b] = t1_units[string_index];
+				string_index--;
+				if (string_index < 0)
+				{
+					prev_letter_ind = b;
+					break;
+				}
+			}
+			else 
+			{
+				string_index--;
+				if (prev_letter_ind == 0)
+				{
+					a++;
+				}
+				prev_letter_ind = b;
+				break;
+			}
+		}
+		prev_letter_ind = b;
+	}
+
+	for (int a = 0; a<amount; a++)
+	{
+		temp1 = atoi(type_1_matrix[a]);
+		temp[a] = (temp1 << 8 | temp1 >> 8);
+	}
+
+	int size = 2*(1+amount);
+	memcpy(type0from1,&type,1);
+	memcpy(type0from1+1,&amount,1);
+	memcpy(type0from1+2, temp,amount*2);
+}
 
 //two different functions created for print(for checking) because of difference in the data type of units. uint16_t vs uint8_t
 void print_units_0(uint16_t *units, uint8_t amount)
@@ -181,14 +246,20 @@ void print_units_1(uint8_t *units, int unit_size)
 int main()
 {
 	FILE *fptr;
+	FILE *writer;
 	uint8_t unit_type;
-	fptr = fopen("practice_project_test_file_2","rb");
+	// fptr = fopen("output.txt","rb");
+	fptr = fopen("practice_project_test_file_1","rb");
+	writer = fopen("output.txt","wb+");
 	bool Fail = false;
 	int cposition = ftell(fptr);
 	fseek(fptr, 0L, SEEK_END);	//OL is the offset
 	int file_size = ftell(fptr);
 	fseek(fptr, cposition, SEEK_SET);	//set the position back to the original position
 	uint8_t amount;
+	int format = 1;
+	int pos;	//for writing to a file
+	long size;
 	while (ftell(fptr)!=file_size)
 	{
 		unit_type=get_unit_type(fptr);
@@ -211,9 +282,8 @@ int main()
 			printf("The amount is %d \n", amount );
 			int type_1_length = get_type_1_length(fptr,amount-1);	//-1 since no_of_commas = total amount - 1 as last one does not end with a comma
 			uint8_t units[type_1_length];
-			get_type_1_units(fptr, units, amount);
+			get_type_1_units(fptr, units, type_1_length);
 			print_units_1(units, type_1_length);	//printing till the end of the unit
-
 		}
 		else
 		{
