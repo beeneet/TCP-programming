@@ -238,10 +238,7 @@ void print_units_1(uint8_t *units, long unit_size)
 
 }
 
-
-
-
-int main()
+bool serve()
 {
 	FILE *fptr;
 	FILE *writer;
@@ -255,7 +252,7 @@ int main()
 	long file_size = ftell(fptr);
 	fseek(fptr, cposition, SEEK_SET);	//set the position back to the original position
 	uint8_t amount;
-	int format = 3;
+	int format = 4;
 	int pos;	//for writing to a file
 	long size;
 	while (ftell(fptr)!=file_size)
@@ -265,7 +262,6 @@ int main()
 		if (unit_type==0)	//Testing if the program is correct for unit type 0
 		{
 			amount = get_type_0_amount(fptr);
-			printf("The amount is: %d \n", amount );
 			uint16_t units[amount];	//buffer to store units
 			get_type_0_units(fptr, units, amount);
 			print_units_0(units, amount);
@@ -277,25 +273,35 @@ int main()
 				type_0_to_type_0(result0_0, units, amount);
 				fwrite(result0_0, sizeof(uint8_t),size, writer );
 			}
-			else if (format==1)		//Type 0 to 1
+			else if (format==1 || format==3)		//Type 0 to 1
 			{
-				// char result0_1[10000];
-				// memset(result0_1,0,10000);  //set it to start from result0_1[0]
 				type_0_to_type_1(units, amount, writer);	//also writes
-				// fwrite(result0_1,sizeof(uint8_t),pos, writer);
-
 			}
 
 		}
 		else if (unit_type==1)
 		{
-			printf("yes");
 			char type_1_amt[3];
 			uint16_t amount;
 			int type_1_amt_flag = get_type_1_amount(fptr,type_1_amt);
+
+			/* Incase the amount contains other characters except ascii, set Fail to true and break the loop.*/
+			if (type_1_amt_flag <1)
+			{
+				Fail = true;
+				break;
+			}
+
 			amount = atoi(type_1_amt);
-			printf("The amount is %d \n", amount );
 			long type_1_length = get_type_1_length(fptr,amount-1,file_size);	//-1 since no_of_commas = total amount - 1 as last one does not end with a comma
+			
+			/*Incase characters except ascii are present and odd number of commas present, then break the loop*/
+			if (type_1_length == -1)
+			{
+				Fail = true;
+				break;
+			}
+
 			uint8_t units[type_1_length];
 			get_type_1_units(fptr, units, type_1_length);
 			print_units_1(units, type_1_length);	//printing till the end of the unit
@@ -307,7 +313,7 @@ int main()
 				type_1_to_type_1(result1_1, units, type_1_amt, type_1_length);
 				fwrite(result1_1, sizeof(uint8_t), size, writer);
 			}
-			else if (format == 2)		//Type 1 to 0
+			else if (format == 2 || format == 3)		//Type 1 to 0
 			{
 				size = 2*(1+amount);
 				uint8_t result1_0[size];
@@ -322,6 +328,7 @@ int main()
 			// break;
 		}
 	}
+	return Fail;
 }
 
 void ShowError(char *err_message){
