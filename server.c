@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #define MAX_REQ 5
+#include "helper.h"
 
 
 int main(int argc, char **argv)
@@ -18,7 +19,7 @@ int main(int argc, char **argv)
 
 	if (argc != 2){		/* servername port, 2 arguments) */
 		printf("%s <Port>\n",argv[0]);
-		exit(1)
+		exit(1);
 	}
 
 	server_port = atoi(argv[1]); /*conver port from string to short*/
@@ -33,13 +34,13 @@ int main(int argc, char **argv)
 	server_address.sin_port = htons(server_port);
 
 	/*Bind*/
-	if (bin(server_socket,(struct sockaddr *) &server_address, sizeof(server_address)) < 0)
-		ShowError("binding failed")
+	if (bind(server_socket,(struct sockaddr *) &server_address, sizeof(server_address)) < 0)
+		ShowError("binding failed");
 
 	/*make it listen for incoming sockets*/
 
 	if (listen(server_socket, MAX_REQ) < 0)
-		ShowError("listening failed")
+		ShowError("listening failed");
 
 	while(1)
 	{
@@ -48,7 +49,7 @@ int main(int argc, char **argv)
 
 		/*accepting the connection*/
 		if ((client_socket = accept(server_socket, (struct sockaddr *) &client_address, &length_of_client_addr )) < 0)
-			ShowError("accepting failed")
+			ShowError("accepting failed");
 		/*getting the ip address of client from client address sockaddr_in*/
 		printf("Client %s connected \n", inet_ntoa(client_address.sin_addr));
 

@@ -44,7 +44,7 @@ void ServeClient(int client_socket){
 */
 
 /*  Read a line from a socket  */
-
+/* unline recv() &  send(), Readline() and Writeline() can be used for UDP sockets too*/
 ssize_t Readline(int sockd, void *vptr, size_t maxlen) {
     ssize_t n, rc;
     char    c, *buffer;
