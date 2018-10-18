@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 	const char *file_details[3];	/*array to store file details ie arg[3]-arg[5]*/
 	unsigned int file_details_len;
 	int bytes_received, total_bytes_received;	/*bytes_received records bytes received in single read(), total_bytes_received is the total bytes received*/ 
-
+	char *convPtr;
 /*arguments check*/
 
 	if (argc!=6){
@@ -24,8 +24,10 @@ int main(int argc, char *argv[])
 		ShowError("Usage Error");
 	}
 
-	server_IP = argv[1]
-	server_port = argv[2]
+	server_IP = argv[1];
+
+	server_port = strtoul(argv[2],&convPtr,10);
+	// server_port = argv[2];
 	/*fill in the file details*/
 	file_details[0] = argv[3];
 	file_details[1] = argv[4];
@@ -47,8 +49,45 @@ int main(int argc, char *argv[])
 
 	if (connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address)) < 0)
 		ShowError("connecting to server failed");
+	printf("Connected to server\n");
 
-	
+	//Obtaining the length of the file before sending to the server
+
+	FILE *input_file = fopen(file_details[0],"rb");
+	if (input_file==NULL)
+	{
+		ShowError("Failed to open file");
+	}
+
+	//Go to end and get the size using fseek.
+	long cposition = ftell(input_file);
+	fseek(input_file, 0L, SEEK_END);
+	long file_size = ftell(input_file);
+	printf("file size %ld\n", file_size);
+	fseek(input_file,cposition,SEEK_SET); //go back to the beginning
+	int name_length = strlen(file_details[2]);
+	unsigned char to_fname;
+	char f_format = atoi(file_details[1]);
+	int arr_pos = 0;
+	//send the data to server via a char array
+	char file_details_buffer[sizeof(long)+to_fname+2];
+	memcpy(file_details_buffer, &f_format,1);
+	arr_pos++;
+	memcpy(file_details_buffer+arr_pos, &name_length, 1);
+	arr_pos++;
+	memcpy(file_details_buffer+arr_pos, file_details[2], name_length);
+	arr_pos += name_length;
+	memcpy(file_details_buffer+arr_pos, &file_size, sizeof(long));
+
+	//send file details to server
+	long total_s = send(client_socket, file_details_buffer, arr_pos+sizeof(long),0);
+	if (total_s!=arr_pos+sizeof(long))
+	{
+		ShowError("All file details bytes not sent");
+	}
+	printf("Sent file details to server\n");
+
+
 
 
 
