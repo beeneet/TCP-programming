@@ -41,14 +41,11 @@ void get_type_0_units(FILE *fptr, uint16_t *units, uint8_t amount)
 }
 
 //using fseek() and ftell() to figure out the length. fseek() points to a given offset of a filestream using offset and ftell shows the length
-int get_type_1_length(FILE *fptr, uint8_t total_commas)
+long get_type_1_length(FILE *fptr, uint16_t total_commas, long file_size)
 {
 	int cposition = ftell(fptr);
-	fseek(fptr, 0L, SEEK_END);	//OL is the offset
-	int file_size = ftell(fptr);
-	fseek(fptr, cposition, SEEK_SET);	//set the position back to the original position
 	uint8_t current;
-	int unit_length = 0;
+	long unit_length = 0;
 	int no_of_commas=0;
 	long prev_comma_pos = -1;
 	while (true)	//get one byte each iteration and check if it is valid. 
@@ -91,22 +88,23 @@ void get_type_1_units(FILE *fptr, uint8_t *units, uint8_t amount)
 }
 
 
-void type_0_to_type_1(uint8_t *t0_to_1, uint16_t *t0_units,uint8_t amount)
+void type_0_to_type_1(uint16_t *t0_units,uint8_t amount, FILE * writer)
 {
-	// char t0_to_1[10000];
+	char t0_to_1[10000];
+	// memset(t0_to_1,0,10000);
 	int position = 0;	//it is the index of buffer, we specify the size of the contents of the units
 	uint8_t type = 1;
-	memset(t0_to_1,0,10000); //set it to start from t0_to_1[0]
+	uint8_t cp_amount = amount;
 	memcpy(t0_to_1,&type,1);	//copy the new type val on the buffer
 	position ++;
 	char type_1_amt[3];	//3 bytes for the ascii amount value
 	int a;
 	//converting the int amount to string ascii value. we know 0=48+0, 1=48+1 in ascii. 
 	//start to fill the type_1_amt string from the end.
-	for(a=2;a>-1;--a)
+	for(a=2;a>-1;a--)
 	{
-		type_1_amt[a] = (amount%10)+48;	//getting the last character
-		amount = amount/10;	//reducing the end digit
+		type_1_amt[a] = (cp_amount%10)+48;	//getting the last character
+		cp_amount = cp_amount/10;	//reducing the end digit
 	}
 
 	memcpy(t0_to_1+position,type_1_amt,3);
@@ -116,7 +114,7 @@ void type_0_to_type_1(uint8_t *t0_to_1, uint16_t *t0_units,uint8_t amount)
 	*/
 	char delimiter = ',';
 	uint16_t num;
-	for (a=0;a<amount;++a)
+	for (a=0;a<amount;a++)
 	{
 		//extract the number
 		num = (t0_units[a]<<8)|(t0_units[a]>>8);
@@ -132,8 +130,7 @@ void type_0_to_type_1(uint8_t *t0_to_1, uint16_t *t0_units,uint8_t amount)
 			position++;
 		}
 	}
-
-	// fwrite(t0_to_1,sizeof(uint8_t),position,writer);
+	fwrite(t0_to_1,sizeof(uint8_t),position,writer);
 }
 
 
@@ -169,7 +166,7 @@ void type_1_to_type_0(uint8_t *type0from1, uint8_t *t1_units, uint8_t amount, in
 	uint16_t temp[amount];
 	uint16_t temp1;
 	char type_1_matrix[amount][5];
-	memset(type_1_matrix,0,sizeof(char)*amount*5);
+	memset(type_1_matrix,32,sizeof(char)*amount*5);
 	/*storing each number in a matrix. We need to traverse from the the end as it is stored that way in the matrix 
 	for simplicity. It also helps with atoi() later.*/
 	int string_index = unit_length -1 ;
@@ -201,8 +198,9 @@ void type_1_to_type_0(uint8_t *type0from1, uint8_t *t1_units, uint8_t amount, in
 				prev_letter_ind = b;
 				break;
 			}
+			prev_letter_ind = b;
 		}
-		prev_letter_ind = b;
+			
 	}
 
 	for (int a = 0; a<amount; a++)
@@ -229,7 +227,7 @@ void print_units_0(uint16_t *units, uint8_t amount)
 }
 
 
-void print_units_1(uint8_t *units, int unit_size)
+void print_units_1(uint8_t *units, long unit_size)
 {
 	int a;
 	for (a=0;a<unit_size;a++)	//amount is unit size for type 1. Print character by character
@@ -248,16 +246,16 @@ int main()
 	FILE *fptr;
 	FILE *writer;
 	uint8_t unit_type;
-	// fptr = fopen("output.txt","rb");
-	fptr = fopen("practice_project_test_file_1","rb");
-	writer = fopen("output.txt","wb+");
+	fptr = fopen("output.txt","rb");
+	// fptr = fopen("practice_project_test_file_1","rb");
+	// writer = fopen("output.txt","wb+");
 	bool Fail = false;
-	int cposition = ftell(fptr);
+	long cposition = ftell(fptr);
 	fseek(fptr, 0L, SEEK_END);	//OL is the offset
-	int file_size = ftell(fptr);
+	long file_size = ftell(fptr);
 	fseek(fptr, cposition, SEEK_SET);	//set the position back to the original position
 	uint8_t amount;
-	int format = 1;
+	int format = 3;
 	int pos;	//for writing to a file
 	long size;
 	while (ftell(fptr)!=file_size)
@@ -267,10 +265,27 @@ int main()
 		if (unit_type==0)	//Testing if the program is correct for unit type 0
 		{
 			amount = get_type_0_amount(fptr);
-			printf("The amount is %d \n", amount );
+			printf("The amount is: %d \n", amount );
 			uint16_t units[amount];	//buffer to store units
 			get_type_0_units(fptr, units, amount);
 			print_units_0(units, amount);
+
+			if (format == 0 || format == 2)
+			{
+				size = 2*(1+amount);
+				uint8_t result0_0[size];
+				type_0_to_type_0(result0_0, units, amount);
+				fwrite(result0_0, sizeof(uint8_t),size, writer );
+			}
+			else if (format==1)		//Type 0 to 1
+			{
+				// char result0_1[10000];
+				// memset(result0_1,0,10000);  //set it to start from result0_1[0]
+				type_0_to_type_1(units, amount, writer);	//also writes
+				// fwrite(result0_1,sizeof(uint8_t),pos, writer);
+
+			}
+
 		}
 		else if (unit_type==1)
 		{
@@ -280,10 +295,26 @@ int main()
 			int type_1_amt_flag = get_type_1_amount(fptr,type_1_amt);
 			amount = atoi(type_1_amt);
 			printf("The amount is %d \n", amount );
-			int type_1_length = get_type_1_length(fptr,amount-1);	//-1 since no_of_commas = total amount - 1 as last one does not end with a comma
+			long type_1_length = get_type_1_length(fptr,amount-1,file_size);	//-1 since no_of_commas = total amount - 1 as last one does not end with a comma
 			uint8_t units[type_1_length];
 			get_type_1_units(fptr, units, type_1_length);
 			print_units_1(units, type_1_length);	//printing till the end of the unit
+
+			if (format==0 || format==1)
+			{
+				size = 4 + type_1_length;
+				uint8_t result1_1[size];
+				type_1_to_type_1(result1_1, units, type_1_amt, type_1_length);
+				fwrite(result1_1, sizeof(uint8_t), size, writer);
+			}
+			else if (format == 2)		//Type 1 to 0
+			{
+				size = 2*(1+amount);
+				uint8_t result1_0[size];
+				type_1_to_type_0(result1_0, units, amount, type_1_length);
+				fwrite(result1_0, sizeof(uint8_t), size, writer);
+			}
+
 		}
 		else
 		{
