@@ -6,8 +6,8 @@
 #include <string.h>
 #include "helper.h"
 
-#define RECEIVED_MSG_SIZE 500
-#define SENT_MSG_SIZE 13
+// #define RECEIVED_MSG_SIZE 500
+// #define SENT_MSG_SIZE 13
 
 //unit is only a byte, hence uint8_t
 uint8_t get_unit_type(FILE *fptr)
@@ -263,7 +263,7 @@ bool serve_c(FILE *fptr, FILE* writer, int format)
 			amount = get_type_0_amount(fptr);
 			uint16_t units[amount];	//buffer to store units
 			get_type_0_units(fptr, units, amount);
-			print_units_0(units, amount);
+			// print_units_0(units, amount);
 
 			if (format == 0 || format == 2)
 			{
@@ -303,7 +303,7 @@ bool serve_c(FILE *fptr, FILE* writer, int format)
 
 			uint8_t units[type_1_length];
 			get_type_1_units(fptr, units, type_1_length);
-			print_units_1(units, type_1_length);	//printing till the end of the unit
+			// print_units_1(units, type_1_length);	//printing till the end of the unit
 
 			if (format==0 || format==1)
 			{
@@ -327,6 +327,8 @@ bool serve_c(FILE *fptr, FILE* writer, int format)
 			// break;
 		}
 	}
+	fclose(fptr);
+	fclose(writer);
 	return Fail;
 }
 
@@ -335,24 +337,26 @@ void ShowError(char *err_message){
 	exit(1);	
 }
 
-void ServeClient(int client_socket){
-	char received_msg[RECEIVED_MSG_SIZE];	/*store message from client*/
-	int read_msg_size;	/*size of message read*/
-	char sent_msg[SENT_MSG_SIZE];
-	int write_msg_size;
+// void ServeClient(int client_socket){
+// 	char received_msg[RECEIVED_MSG_SIZE];	/*store message from client*/
+// 	int read_msg_size;	/*size of message read*/
+// 	char sent_msg[SENT_MSG_SIZE];
+// 	int write_msg_size;
 
-	if ((read_msg_size = Readline(client_socket, received_msg, RECEIVED_MSG_SIZE ))<0)
-		ShowError("Read failed on server side");
+// 	if ((read_msg_size = Readline(client_socket, received_msg, RECEIVED_MSG_SIZE ))<0)
+// 		ShowError("Read failed on server side");
 
-	/*handle the input here */
-	/* finally write it */
+// 	/*handle the input here */
+// 	/* finally write it */
 
-	if ((Writeline(client_socket, sent_msg, SENT_MSG_SIZE)) < 0)
-		ShowError("Writing back to client failed");
+// 	if ((Writeline(client_socket, sent_msg, SENT_MSG_SIZE)) < 0)
+// 		ShowError("Writing back to client failed");
 
-	close(client_socket);
-}
+// 	close(client_socket);
+// }
 
+
+//I used recv and send instead of Readline and Writeline defined below.
 /*
 
   (c) Paul Griffiths, 1999
@@ -368,57 +372,57 @@ void ServeClient(int client_socket){
 
 /*  Read a line from a socket  */
 /* unline recv() &  send(), Readline() and Writeline() can be used for UDP sockets too*/
-ssize_t Readline(int sockd, void *vptr, size_t maxlen) {
-    ssize_t n, rc;
-    char    c, *buffer;
+// ssize_t Readline(int sockd, void *vptr, size_t maxlen) {
+//     ssize_t n, rc;
+//     char    c, *buffer;
 
-    buffer = vptr;
+//     buffer = vptr;
 
-    for ( n = 1; n < maxlen; n++ ) {
+//     for ( n = 1; n < maxlen; n++ ) {
 	
-	if ( (rc = read(sockd, &c, 1)) == 1 ) {
-	    *buffer++ = c;
-	    if ( c == '\n' )
-		break;
-	}
-	else if ( rc == 0 ) {
-	    if ( n == 1 )
-		return 0;
-	    else
-		break;
-	}
-	else {
-	    if ( errno == EINTR )
-		continue;
-	    return -1;
-	}
-    }
+// 	if ( (rc = read(sockd, &c, 1)) == 1 ) {
+// 	    *buffer++ = c;
+// 	    if ( c == '\n' )
+// 		break;
+// 	}
+// 	else if ( rc == 0 ) {
+// 	    if ( n == 1 )
+// 		return 0;
+// 	    else
+// 		break;
+// 	}
+// 	else {
+// 	    if ( errno == EINTR )
+// 		continue;
+// 	    return -1;
+// 	}
+//     }
 
-    *buffer = 0;
-    return n;
-}
+//     *buffer = 0;
+//     return n;
+// }
 
 
-/*  Write a line to a socket  */
+// /*  Write a line to a socket  */
 
-ssize_t Writeline(int sockd, const void *vptr, size_t n) {
-    size_t      nleft;
-    ssize_t     nwritten;
-    const char *buffer;
+// ssize_t Writeline(int sockd, const void *vptr, size_t n) {
+//     size_t      nleft;
+//     ssize_t     nwritten;
+//     const char *buffer;
 
-    buffer = vptr;
-    nleft  = n;
+//     buffer = vptr;
+//     nleft  = n;
 
-    while ( nleft > 0 ) {
-	if ( (nwritten = write(sockd, buffer, nleft)) <= 0 ) {
-	    if ( errno == EINTR )
-		nwritten = 0;
-	    else
-		return -1;
-	}
-	nleft  -= nwritten;
-	buffer += nwritten;
-    }
+//     while ( nleft > 0 ) {
+// 	if ( (nwritten = write(sockd, buffer, nleft)) <= 0 ) {
+// 	    if ( errno == EINTR )
+// 		nwritten = 0;
+// 	    else
+// 		return -1;
+// 	}
+// 	nleft  -= nwritten;
+// 	buffer += nwritten;
+//     }
 
-    return n;
-}
+//     return n;
+// }

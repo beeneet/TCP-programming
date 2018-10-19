@@ -133,12 +133,31 @@ int main(int argc, char **argv)
 		server_reader = fopen("tempF.txt","rb");	//open the temp file to read
 		bool result;
 		result = serve_c(server_reader, server_writer, f_format);
-		printf("%d\n",  result);
+		remove("tempF.txt");
+		char update = (char) result;
+		// if (result==1)// if boolean Fail is true, ie there's a format error.
+		// {
+		// 	remove(to_name);
+		// 	printf("removed");
+		// 	update = '1';
+
+		// }
+
+		printf("Update is %d\n", update);
+
+		if (send(client_socket, &update, sizeof(char), 0)!=sizeof(char))
+		{
+			ShowError("Update sending failed");
+		}
+
+		printf("Response sent to client\n");
+
+		close(client_socket);
 
 	} 
 
 
-
+	return 0;
 
 
 }

@@ -121,7 +121,31 @@ int main(int argc, char *argv[])
 
 	fclose(input_file);
 
+	char update;
+	long received = 0;
+	while(received ==0)
+	{
+		if ((received = recv(client_socket, &update, 1, 0)) <= 0)
+		{
+			ShowError("Update failed to receive from server");
+		}
+		printf("Hello\n");
+	}
 
+	printf("Update is %d\n", update );
+	if (update == 0)
+	{
+		printf("Format error\n");
+	}
+	else if (update == 1)
+	{
+		printf("Success\n");
+	}
+
+	close(client_socket);
+
+
+	return 0;
 
 
 }
