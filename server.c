@@ -4,7 +4,10 @@
 #include <arpa/inet.h> 
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdbool.h>
 #define MAX_REQ 5
+#define MAX_ARG 500
+#define MAX_SIZE 1000
 #include "helper.h"
 
 
@@ -38,7 +41,6 @@ int main(int argc, char **argv)
 		ShowError("binding failed");
 
 	/*make it listen for incoming sockets*/
-
 	if (listen(server_socket, MAX_REQ) < 0)
 		ShowError("listening failed");
 
@@ -46,7 +48,6 @@ int main(int argc, char **argv)
 	{
 		/* to fill in the client_address sockaddr after accept*/
 		length_of_client_addr = sizeof(client_address);
-
 		/*accepting the connection*/
 		if ((client_socket = accept(server_socket, (struct sockaddr *) &client_address, &length_of_client_addr )) < 0)
 			ShowError("accepting failed");
@@ -55,9 +56,86 @@ int main(int argc, char **argv)
 
 		/* Do action here*/
 		/*receive and send messages, and finally close once done. We work with the file format here*/
+		int len_received = 0;
+		char arguments[MAX_ARG];
+		len_received = recv(client_socket, arguments, MAX_ARG, 0);
+		if (len_received < 0)
+		{
+			ShowError("receiving failed");
+		}
+
+		printf("Arguments received");
+
+		char f_format;
+		unsigned char name_size;
+		long file_size;
+		int arr_pos;
+		memcpy(&f_format, arguments, 1);
+		arr_pos++;
+		memcpy(&name_size, arguments+arr_pos,1);
+		arr_pos++;
+		char to_name[name_size+1];
+		memcpy(to_name, arguments+arr_pos, name_size);
+		arr_pos += name_size;
+		to_name[name_size]='\0'; //string end with \0
+		memcpy(&file_size, arguments+arr_pos, sizeof(long));
+
+		//check if correct details is received
+
+		printf("%d\n", f_format);
+		printf("%s\n", to_name );
+		printf("%ld\n", file_size );
+
+		//send response back to server saying messages were received
+
+		if (send(client_socket, &len_received, sizeof(int), 0)!=sizeof(int))
+		{
+			ShowError("sending response confirming message received failed");
+		}
+		printf("Confirmation successfully sent\n" );
+
+
+		//create a temporary fule to store the incoming data
+
+		FILE *temp_file_buffer = fopen("tempF.txt","wb");
+		if (temp_file_buffer==NULL)
+		{
+			ShowError("Failed to open temp file");
+		}
+
+		char incoming_buffer[MAX_SIZE];
+		long received = 0;
+		long remaining = file_size;
+
+		while (remaining > 0)
+		{
+			if (remaining>=MAX_SIZE)
+			{
+				if ((received = recv(client_socket, incoming_buffer, MAX_SIZE, 0))<0)
+					ShowError("receiving failed. Allocate more size for incoming buffer");
+			}
+			else if ((received = recv(client_socket, incoming_buffer, remaining, 0)) < 0)
+			{
+				ShowError("receiving incoming buffer failed");
+			}
+			remaining = remaining - received;
+			fwrite(incoming_buffer, received, 1, temp_file_buffer);
+		}
+
+
+		fclose(temp_file_buffer);
+
+		//Now, move the file from temp to the new file with name to_name
+
+		FILE *server_writer;
+		server_writer = fopen(to_name, "wb+");
+		FILE *server_reader;
+		server_reader = fopen("tempF.txt","rb");	//open the temp file to read
+		bool result;
+		result = serve_c(server_reader, server_writer, f_format);
+		printf("%d\n",  result);
+
 	} 
-
-
 
 
 

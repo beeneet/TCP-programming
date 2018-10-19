@@ -238,12 +238,12 @@ void print_units_1(uint8_t *units, long unit_size)
 
 }
 
-bool serve()
+bool serve_c(FILE *fptr, FILE* writer, int format)
 {
-	FILE *fptr;
-	FILE *writer;
+	// FILE *fptr;
+	// FILE *writer;
 	uint8_t unit_type;
-	fptr = fopen("output.txt","rb");
+	// fptr = fopen("output.txt","rb");
 	// fptr = fopen("practice_project_test_file_1","rb");
 	// writer = fopen("output.txt","wb+");
 	bool Fail = false;
@@ -252,7 +252,6 @@ bool serve()
 	long file_size = ftell(fptr);
 	fseek(fptr, cposition, SEEK_SET);	//set the position back to the original position
 	uint8_t amount;
-	int format = 4;
 	int pos;	//for writing to a file
 	long size;
 	while (ftell(fptr)!=file_size)

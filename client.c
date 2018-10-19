@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
+#define MAX_SIZE 2000
 #include "helper.h"
 
 
@@ -87,6 +89,37 @@ int main(int argc, char *argv[])
 	}
 	printf("Sent file details to server\n");
 
+	//Create a char array to send file contents to the server one by one
+	char f_contents[MAX_SIZE];
+	long sent = 0;
+	long remaining = file_size;
+
+	while(remaining > 0)
+	{	//sending MAZ_SIZE at a time
+		if (remaining > MAX_SIZE)
+		{
+			fread(f_contents, 1, MAX_SIZE, input_file);
+			if ((sent=send(client_socket, f_contents, MAX_SIZE, 0))!=MAX_SIZE)
+			{
+				ShowError("sending failed");
+			}
+		} 
+		//if remaining is less than MAX_SIZE
+		else 
+		{
+			fread(f_contents, 1, remaining, input_file);
+			if((sent=send(client_socket, f_contents, remaining, 0))!=remaining)
+			{
+				ShowError("sending failed");
+			}
+		}
+		remaining = remaining - sent;	//Update remaining bytes
+
+	}
+
+	printf("successfully sent file to server");
+
+	fclose(input_file);
 
 
 
