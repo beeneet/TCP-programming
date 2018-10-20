@@ -117,35 +117,31 @@ int main(int argc, char *argv[])
 
 	}
 
-	printf("successfully sent file to server");
+	printf("successfully sent file to server\n");
 
 	fclose(input_file);
 
-	char update;
+	char update[4];
 	long received = 0;
 	while(received ==0)
 	{
-		if ((received = recv(client_socket, &update, 1, 0)) <= 0)
+		if ((received = recv(client_socket, update, 4, 0)) <= 0)
 		{
 			ShowError("Update failed to receive from server");
 		}
-		printf("Hello\n");
 	}
-
-	printf("Update is %d\n", update );
-	if (update == 0)
+	uint8_t val = atoi(update);
+	if (val == 1)	//if error
 	{
 		printf("Format error\n");
 	}
-	else if (update == 1)
+	else if (val == 0)	//if success
 	{
 		printf("Success\n");
 	}
 
 	close(client_socket);
 
-
 	return 0;
-
-
 }
+

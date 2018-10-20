@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 	if (listen(server_socket, MAX_REQ) < 0)
 		ShowError("listening failed");
 
-	while(1)
+	while(true)
 	{
 		/* to fill in the client_address sockaddr after accept*/
 		length_of_client_addr = sizeof(client_address);
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 			ShowError("receiving failed");
 		}
 
-		printf("Arguments received");
+		printf("Arguments received\n");
 
 		char f_format;
 		unsigned char name_size;
@@ -82,9 +82,9 @@ int main(int argc, char **argv)
 
 		//check if correct details is received
 
-		printf("%d\n", f_format);
-		printf("%s\n", to_name );
-		printf("%ld\n", file_size );
+		// printf("%d\n", f_format);
+		// printf("%s\n", to_name );
+		// printf("%ld\n", file_size );
 
 		//send response back to server saying messages were received
 
@@ -131,32 +131,22 @@ int main(int argc, char **argv)
 		server_writer = fopen(to_name, "wb+");
 		FILE *server_reader;
 		server_reader = fopen("tempF.txt","rb");	//open the temp file to read
-		bool result;
+		int result;
 		result = serve_c(server_reader, server_writer, f_format);
 		remove("tempF.txt");
 		char update = (char) result;
-		// if (result==1)// if boolean Fail is true, ie there's a format error.
-		// {
-		// 	remove(to_name);
-		// 	printf("removed");
-		// 	update = '1';
-
-		// }
-
-		printf("Update is %d\n", update);
+		if (result==1)// if boolean Fail is true, ie there's a format error.
+		{
+			remove(to_name);	//Remove the written file
+		}
 
 		if (send(client_socket, &update, sizeof(char), 0)!=sizeof(char))
 		{
 			ShowError("Update sending failed");
 		}
-
-		printf("Response sent to client\n");
-
+		printf("Final response sent to client\n");
 		close(client_socket);
-
 	} 
-
-
 	return 0;
 
 

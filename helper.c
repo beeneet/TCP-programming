@@ -324,7 +324,7 @@ bool serve_c(FILE *fptr, FILE* writer, int format)
 		else
 		{
 			Fail=true;	//Fail flag is set to True. Returns Failure to the client.
-			// break;
+			break;
 		}
 	}
 	fclose(fptr);
